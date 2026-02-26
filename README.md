@@ -95,7 +95,7 @@ root/ │
 
 ## 🌍 Deployment
 
-- Smart Contract → Sepolia Testnet
+- Smart Contract → Ethereum Mainnet
 - Backend → Railway / Render
 - Frontend → Vercel
 - Database → Neon / Supabase
@@ -116,7 +116,6 @@ root/ │
 - IPFS integration for decentralized storage
 - NFT-based certificate issuance
 - Batch certificate issuance using Merkle Trees
-- Gasless transactions (EIP-712)
 - Upgradeable smart contracts
 
 ---
