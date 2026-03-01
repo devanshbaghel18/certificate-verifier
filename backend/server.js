@@ -1,4 +1,8 @@
 require("dotenv").config();
+const {
+  issueCertificate,
+  verifyCertificate,
+} = require("./blockchainService");
 const express = require("express");
 const cors = require("cors");
 
@@ -50,6 +54,48 @@ app.post("/certificates", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(400).json({ error: error.message });
+  }
+});
+
+// 🔗 Issue Certificate on Blockchain
+app.post("/issue-blockchain", async (req, res) => {
+  try {
+    const { id, student, course, institution } = req.body;
+
+    const result = await issueCertificate(
+      id,
+      student,
+      course,
+      institution
+    );
+
+    res.json({ success: true, message: result });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
+// 🔗 Verify Certificate from Blockchain
+app.get("/verify-blockchain/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const certificate = await verifyCertificate(id);
+
+    res.json({
+      certificateId: certificate[0],
+      studentName: certificate[1],
+      courseName: certificate[2],
+      institutionName: certificate[3],
+      issueDate: Number(certificate[4]),
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
