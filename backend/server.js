@@ -57,7 +57,7 @@ app.post("/certificates", async (req, res) => {
   }
 });
 
-// 🔗 Issue Certificate on Blockchain
+// Issue Certificate on Blockchain
 app.post("/issue-blockchain", async (req, res) => {
   try {
     const { id, student, course, institution } = req.body;
@@ -78,7 +78,7 @@ app.post("/issue-blockchain", async (req, res) => {
 });
 
 
-// 🔗 Verify Certificate from Blockchain
+// Verify Certificate from Blockchain
 app.get("/verify-blockchain/:id", async (req, res) => {
   try {
     const id = req.params.id;
