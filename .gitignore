@@ -17,3 +17,9 @@ build/
 # IDE
 .vscode/
 .idea/
+
+# Blockchain
+blockchain/node_modules
+blockchain/artifacts
+blockchain/cache
+blockchain/typechain

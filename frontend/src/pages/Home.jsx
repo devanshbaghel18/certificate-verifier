@@ -12,7 +12,7 @@ function Home() {
         setBackendStatus(data.status);
         setDetails(data);
       } catch (error) {
-        setBackendStatus("Backend Not Reachable ❌");
+        setBackendStatus("Backend Not Reachable ");
       }
     };
 
