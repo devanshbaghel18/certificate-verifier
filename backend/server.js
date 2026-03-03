@@ -20,7 +20,7 @@ const PORT = process.env.PORT || 5000;
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
-    message: "Backend server is running successfully 🚀",
+    message: "Backend server is running successfully ",
     timestamp: new Date(),
     uptime: process.uptime(),
   });
