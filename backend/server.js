@@ -3,7 +3,7 @@ require("dotenv").config();
 const {
   issueCertificate,
   verifyCertificate,
-} = require("./blockchainService");
+} = require("./src/services/blockchainService");
 const express = require("express");
 const cors = require("cors");
 
