@@ -1,3 +1,8 @@
+const logger = require("./src/utils/logger");
+const requestLogger = require("./src/middlewares/requestLogger");
+const securityLogger = require("./src/middlewares/securityLogger");
+const morgan = require("morgan");
+
 const { googleLogin } = require("./src/auth/googleAuth");
 require("dotenv").config();
 const {
@@ -11,6 +16,20 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
+
+app.use(requestLogger);   // ✅ request tracking
+app.use(securityLogger);  // ✅ security logs
+
+app.use(
+  morgan("combined", {
+    stream: {
+      write: (message) => logger.info(message.trim()),
+    },
+  })
+);
+
+logger.info("Server starting..."); // before setup
+
 // Google Auth Route
 app.post("/auth/google", googleLogin);
 
@@ -104,6 +123,7 @@ app.get("/verify-blockchain/:id", async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(` Server is running on http://localhost:${PORT}`);
+  logger.info(`Server running on http://localhost:${PORT}`); // after start
 });
 
 const pool = require("./config/db");

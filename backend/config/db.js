@@ -1,5 +1,6 @@
 const { Pool } = require("pg");
 require("dotenv").config();
+const logger = require("../src/utils/logger");
 
 // Create pool
 const pool = new Pool({
@@ -9,13 +10,13 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
 
-  // 🔥 NEW (important)
+  // NEW (important)
   max: 10, // max connections
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 });
 
-// 🔥 Better connection test
+//  Better connection test
 (async () => {
   try {
     const client = await pool.connect();
@@ -26,9 +27,13 @@ const pool = new Pool({
   }
 })();
 
-// 🔥 Handle unexpected errors
+//  Handle unexpected errors
 pool.on("error", (err) => {
   console.error("❌ Unexpected DB Error:", err.message);
 });
+
+pool.connect()
+  .then(() => logger.info("Database connected"))
+  .catch(err => logger.error("Database connection error", { error: err.message }));
 
 module.exports = pool;
