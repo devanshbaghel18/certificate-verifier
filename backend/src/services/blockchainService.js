@@ -1,7 +1,7 @@
 require("dotenv").config(); // Loads variables from .env, Makes them availabel using process.env
 const { ethers } = require("ethers"); // These imports Ethers.js(Ethereum interaction library)
 
-// 🔥 ADDED
+// ADDED
 const logger = require("../utils/logger");
 
 // Read configuration from .env
@@ -9,7 +9,7 @@ const contractAddress = process.env.CONTRACT_ADDRESS; // Tells where the smart c
 const rpcUrl = process.env.RPC_URL; // Tells which blockchain network to connect
 const privateKey = process.env.PRIVATE_KEY; // Tells which wallet signs transaction
 
-// 🔥 ADDED (safety check)
+// ADDED (safety check)
 if (!contractAddress || !rpcUrl || !privateKey) {
   logger.error("Missing environment variables", {
     contractAddress,
@@ -29,35 +29,35 @@ const abi = [
 // Connects backend to ethereum node. rpcUrl= local hardhat or Alchemy RPC
 const provider = new ethers.JsonRpcProvider(rpcUrl); 
 
-// 🔥 ADDED
+// ADDED
 logger.info("Blockchain provider initialized", { rpcUrl });
 
 // Loads wallet using primary key, and connects it to network
 const wallet = new ethers.Wallet(privateKey, provider);
 
-// 🔥 ADDED
+// ADDED
 logger.info("Wallet connected");
 
 // Creates contract using- contract address, ABI, wallet
 const contract = new ethers.Contract(contractAddress, abi, wallet);
 
-// 🔥 ADDED
+// ADDED
 logger.info("Smart contract connected", { contractAddress });
 
 // Issue Certificate function
 async function issueCertificate(id, student, course, institution) {
 
-  // 🔥 ADDED
+  // ADDED
   logger.info("Blockchain TX started", { id, student });
 
   const tx = await contract.issueCertificate(id, student, course, institution); // creates blockchain transaction, wallet signs it, sends it to network.
 
-  // 🔥 ADDED
+  // ADDED
   logger.info("Transaction sent", { hash: tx.hash });
 
   await tx.wait(); // waits for blockchain confirmation. Ensures transaction is mined
 
-  // 🔥 ADDED
+  // ADDED
   logger.info("Transaction confirmed", { hash: tx.hash });
 
   return "Certificate Issued";
@@ -66,12 +66,12 @@ async function issueCertificate(id, student, course, institution) {
 // Verify certificate function
 async function verifyCertificate(id) {
 
-  // 🔥 ADDED
+  // ADDED
   logger.info("Blockchain verification started", { id });
 
   const result = await contract.verifyCertificate(id); // Calls smart contract and reads data from blockchain
 
-  // 🔥 ADDED
+  // ADDED
   logger.info("Blockchain verification success", { id });
 
   return result;

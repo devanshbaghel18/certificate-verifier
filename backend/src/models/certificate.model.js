@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-// 🔥 ADDED
+// ADDED
 import logger from "../utils/logger.js";
 
 export const createCertificate = async (
@@ -12,7 +12,7 @@ export const createCertificate = async (
   contractAddress
 ) => {
 
-  // 🔥 ADDED (before query)
+  // ADDED (before query)
   logger.info("DB INSERT started", {
     table: "certificates",
     certificate_uid: uid,
@@ -26,7 +26,7 @@ export const createCertificate = async (
     [uid, studentId, issuerId, hash, txHash, contractAddress]
   );
 
-  // 🔥 ADDED (after success)
+  // ADDED (after success)
   logger.info("DB INSERT success", {
     table: "certificates",
     certificate_uid: uid,
@@ -37,7 +37,7 @@ export const createCertificate = async (
 
 export const getCertificateByUID = async (uid) => {
 
-  // 🔥 ADDED (before query)
+  // ADDED (before query)
   logger.info("DB SELECT started", {
     table: "certificates",
     certificate_uid: uid,
@@ -48,7 +48,7 @@ export const getCertificateByUID = async (uid) => {
     [uid]
   );
 
-  // 🔥 ADDED (after query)
+  // ADDED (after query)
   logger.info("DB SELECT success", {
     table: "certificates",
     certificate_uid: uid,

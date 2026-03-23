@@ -15,7 +15,7 @@ export const issueCert = async (req, res) => {
   try {
     const { uid, student, course, institution } = req.body;
 
-    // ✅ LOG START (ADD HERE)
+    // LOG START (ADD HERE)
     logger.info("Issue certificate request received", {
       uid,
       student,
@@ -26,7 +26,7 @@ export const issueCert = async (req, res) => {
     // Issue on blockchain
     await issueCertificate(uid, student, course, institution);
 
-    // ✅ LOG BLOCKCHAIN SUCCESS
+    // LOG BLOCKCHAIN SUCCESS
     logger.info("Blockchain certificate issued", { uid });
 
     // Store in DB
@@ -39,19 +39,19 @@ export const issueCert = async (req, res) => {
       process.env.CONTRACT_ADDRESS
     );
 
-    // ✅ LOG DB SUCCESS
+    // LOG DB SUCCESS
     logger.info("Certificate stored in DB", {
       uid,
       contractAddress: process.env.CONTRACT_ADDRESS,
     });
 
-    // ✅ FINAL SUCCESS LOG
+    // FINAL SUCCESS LOG
     logger.info("Certificate issued successfully", { uid });
 
     res.json({ success: true, cert });
 
   } catch (err) {
-    // ✅ ERROR LOG (VERY IMPORTANT)
+    // ERROR LOG (VERY IMPORTANT)
     logger.error("Error issuing certificate", {
       error: err.message,
       body: req.body,
@@ -66,17 +66,17 @@ export const verifyCert = async (req, res) => {
   try {
     const { uid } = req.params;
 
-    // ✅ LOG START
+    // LOG START
     logger.info("Verification request received", { uid });
 
     const blockchainData = await verifyCertificate(uid);
 
-    // ✅ LOG BLOCKCHAIN RESULT
+    // LOG BLOCKCHAIN RESULT
     logger.info("Blockchain verification success", { uid });
 
     const dbData = await getCertificateByUID(uid);
 
-    // ✅ LOG DB FETCH
+    // LOG DB FETCH
     logger.info("Database fetch success", { uid });
 
     res.json({
@@ -85,7 +85,7 @@ export const verifyCert = async (req, res) => {
     });
 
   } catch (err) {
-    // ✅ ERROR LOG
+    // ERROR LOG
     logger.error("Verification failed", {
       uid: req.params.uid,
       error: err.message,
