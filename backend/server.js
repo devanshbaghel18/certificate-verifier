@@ -17,8 +17,8 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use(requestLogger);   // ✅ request tracking
-app.use(securityLogger);  // ✅ security logs
+app.use(requestLogger);   // request tracking
+app.use(securityLogger);  // security logs
 
 app.use(
   morgan("combined", {
