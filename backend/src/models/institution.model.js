@@ -1,9 +1,12 @@
-import pool from "../config/db.js";
+const pool = require("../../config/db");
+const logger = require("../utils/logger");
 
 /**
  * Create a new institution
  */
-export const createInstitution = async (name, walletAddress) => {
+const createInstitution = async (name, walletAddress) => {
+  logger.info("DB INSERT started", { table: "institutions", name });
+
   const result = await pool.query(
     `INSERT INTO institutions (name, wallet_address)
      VALUES ($1, $2)
@@ -11,18 +14,27 @@ export const createInstitution = async (name, walletAddress) => {
     [name, walletAddress]
   );
 
+  logger.info("DB INSERT success", { table: "institutions", name });
+
   return result.rows[0];
 };
 
 /**
  * Get institution by wallet address
  */
-export const getInstitutionByWallet = async (walletAddress) => {
+const getInstitutionByWallet = async (walletAddress) => {
+  logger.info("DB SELECT started", { walletAddress });
+
   const result = await pool.query(
     `SELECT * FROM institutions
      WHERE wallet_address = $1`,
     [walletAddress]
   );
+
+  logger.info("DB SELECT success", {
+    walletAddress,
+    found: !!result.rows[0],
+  });
 
   return result.rows[0];
 };
@@ -30,7 +42,9 @@ export const getInstitutionByWallet = async (walletAddress) => {
 /**
  * Verify / Approve institution
  */
-export const verifyInstitution = async (institutionId) => {
+const verifyInstitution = async (institutionId) => {
+  logger.info("DB UPDATE started", { institutionId });
+
   const result = await pool.query(
     `UPDATE institutions
      SET verified = TRUE
@@ -39,16 +53,25 @@ export const verifyInstitution = async (institutionId) => {
     [institutionId]
   );
 
+  logger.info("DB UPDATE success", { institutionId });
+
   return result.rows[0];
 };
 
 /**
  * Get all institutions
  */
-export const getAllInstitutions = async () => {
-  const result = await pool.query(
-    `SELECT * FROM institutions`
-  );
+const getAllInstitutions = async () => {
+  logger.info("DB SELECT ALL institutions");
+
+  const result = await pool.query(`SELECT * FROM institutions`);
 
   return result.rows;
+};
+
+module.exports = {
+  createInstitution,
+  getInstitutionByWallet,
+  verifyInstitution,
+  getAllInstitutions,
 };

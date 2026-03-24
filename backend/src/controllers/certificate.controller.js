@@ -1,33 +1,27 @@
-import {
+const {
   createCertificate,
   getCertificateByUID,
-} from "../models/certificate.model.js";
+} = require("../models/certificate.model"); // DB functions
 
-import logger from "../utils/logger.js";
+const logger = require("../utils/logger"); // Logger
 
-import {
+const {
   issueCertificate,
   verifyCertificate,
-} from "../services/blockchain.service.js";
+} = require("../services/blockchainService"); // Blockchain functions
 
-// Issue certificate
-export const issueCert = async (req, res) => {
+// Issue Certificate
+const issueCert = async (req, res) => {
   try {
     const { uid, student, course, institution } = req.body;
+    const io = req.app.get("io");
 
-    // LOG START (ADD HERE)
-    logger.info("Issue certificate request received", {
-      uid,
-      student,
-      course,
-      institution,
-    });
+    console.log("NEW CONTROLLER HIT"); // Debug log
 
-    // Issue on blockchain
-    await issueCertificate(uid, student, course, institution);
+    logger.info("Issue certificate request received", { uid }); // Log request
 
-    // LOG BLOCKCHAIN SUCCESS
-    logger.info("Blockchain certificate issued", { uid });
+    // Call blockchain
+    const result = await issueCertificate(uid, student, course, institution, io);
 
     // Store in DB
     const cert = await createCertificate(
@@ -35,49 +29,33 @@ export const issueCert = async (req, res) => {
       null,
       null,
       "hash_here",
-      "txHash_here",
+      result.txHash, // Store real txHash
       process.env.CONTRACT_ADDRESS
     );
 
-    // LOG DB SUCCESS
-    logger.info("Certificate stored in DB", {
-      uid,
-      contractAddress: process.env.CONTRACT_ADDRESS,
+    res.json({
+      success: true,
+      message: result.message,
+      txHash: result.txHash,
+      cert,
     });
-
-    // FINAL SUCCESS LOG
-    logger.info("Certificate issued successfully", { uid });
-
-    res.json({ success: true, cert });
 
   } catch (err) {
-    // ERROR LOG (VERY IMPORTANT)
-    logger.error("Error issuing certificate", {
-      error: err.message,
-      body: req.body,
-    });
+    logger.error("Error issuing certificate", { error: err.message });
 
     res.status(500).json({ error: err.message });
   }
 };
 
-// Verify certificate
-export const verifyCert = async (req, res) => {
+// Verify Certificate
+const verifyCert = async (req, res) => {
   try {
     const { uid } = req.params;
 
-    // LOG START
     logger.info("Verification request received", { uid });
 
-    const blockchainData = await verifyCertificate(uid);
-
-    // LOG BLOCKCHAIN RESULT
-    logger.info("Blockchain verification success", { uid });
-
-    const dbData = await getCertificateByUID(uid);
-
-    // LOG DB FETCH
-    logger.info("Database fetch success", { uid });
+    const blockchainData = await verifyCertificate(uid); // Get blockchain data
+    const dbData = await getCertificateByUID(uid); // Get DB data
 
     res.json({
       blockchain: blockchainData,
@@ -85,12 +63,13 @@ export const verifyCert = async (req, res) => {
     });
 
   } catch (err) {
-    // ERROR LOG
-    logger.error("Verification failed", {
-      uid: req.params.uid,
-      error: err.message,
-    });
+    logger.error("Verification failed", { error: err.message });
 
     res.status(500).json({ error: err.message });
   }
+};
+
+module.exports = {
+  issueCert,
+  verifyCert,
 };

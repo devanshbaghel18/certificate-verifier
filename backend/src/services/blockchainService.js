@@ -45,36 +45,75 @@ const contract = new ethers.Contract(contractAddress, abi, wallet);
 logger.info("Smart contract connected", { contractAddress });
 
 // Issue Certificate function
-async function issueCertificate(id, student, course, institution) {
+async function issueCertificate(id, student, course, institution, io) {
 
-  // ADDED
-  logger.info("Blockchain TX started", { id, student });
+  try {
+    io && io.emit("tx-status", { id, status: "sending" }); 
 
-  const tx = await contract.issueCertificate(id, student, course, institution); // creates blockchain transaction, wallet signs it, sends it to network.
+    // ADDED
+    logger.info("Blockchain TX started", { id, student });
 
-  // ADDED
-  logger.info("Transaction sent", { hash: tx.hash });
+    const tx = await contract.issueCertificate(id, student, course, institution); // creates blockchain transaction, wallet signs it, sends it to network.
 
-  await tx.wait(); // waits for blockchain confirmation. Ensures transaction is mined
+    io && io.emit("tx-status", { id, status: "sent", txHash: tx.hash });
 
-  // ADDED
-  logger.info("Transaction confirmed", { hash: tx.hash });
+    if (!tx) {
+      throw new Error("Transaction returned undefined — contract may not be deployed or ABI mismatch");
+    }
 
-  return "Certificate Issued";
+    // ADDED
+    logger.info("Transaction sent", { hash: tx.hash });
+
+    await tx.wait(); // waits for blockchain confirmation. Ensures transaction is mined
+
+    io && io.emit("tx-status", { id, status: "confirmed", txHash: tx.hash });
+
+    // ADDED
+    logger.info("Transaction confirmed", { hash: tx.hash });
+
+    //  FINAL RETURN (IMPORTANT FIX)
+    return {
+      message: "Certificate Issued", // readable message
+      txHash: tx.hash, // actual blockchain transaction hash
+    };
+
+  } catch (error) {
+
+    // ADDED ERROR LOGGING (VERY IMPORTANT)
+    logger.error("Blockchain TX failed", {
+      id,
+      error: error.message,
+    });
+
+    throw error; // rethrow so controller can handle response
+  }
 }
 
 // Verify certificate function
 async function verifyCertificate(id) {
 
-  // ADDED
-  logger.info("Blockchain verification started", { id });
+  try {
 
-  const result = await contract.verifyCertificate(id); // Calls smart contract and reads data from blockchain
+    // ADDED
+    logger.info("Blockchain verification started", { id });
 
-  // ADDED
-  logger.info("Blockchain verification success", { id });
+    const result = await contract.verifyCertificate(id); // Calls smart contract and reads data from blockchain
 
-  return result;
+    // ADDED
+    logger.info("Blockchain verification success", { id });
+
+    return result;
+
+  } catch (error) {
+
+    // ADDED ERROR LOGGING
+    logger.error("Blockchain verification failed", {
+      id,
+      error: error.message,
+    });
+
+    throw error;
+  }
 }
 
 // Makes function available in server.js

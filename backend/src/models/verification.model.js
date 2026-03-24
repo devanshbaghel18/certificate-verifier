@@ -1,13 +1,20 @@
-import pool from "../config/db.js";
+const pool = require("../../config/db");
+const logger = require("../utils/logger");
 
 /**
  * Log a verification attempt
  */
-export const logVerification = async (
+const logVerification = async (
   certificateId,
   verifierWallet,
   verificationStatus
 ) => {
+  logger.info("DB INSERT verification log", {
+    certificateId,
+    verifierWallet,
+    verificationStatus,
+  });
+
   const result = await pool.query(
     `INSERT INTO verification_logs 
      (certificate_id, verifier_wallet, verification_status)
@@ -22,7 +29,9 @@ export const logVerification = async (
 /**
  * Get verification logs for a certificate
  */
-export const getVerificationLogs = async (certificateId) => {
+const getVerificationLogs = async (certificateId) => {
+  logger.info("DB SELECT verification logs", { certificateId });
+
   const result = await pool.query(
     `SELECT * FROM verification_logs
      WHERE certificate_id = $1
@@ -36,7 +45,9 @@ export const getVerificationLogs = async (certificateId) => {
 /**
  * Count how many times certificate was verified
  */
-export const getVerificationCount = async (certificateId) => {
+const getVerificationCount = async (certificateId) => {
+  logger.info("DB COUNT verification logs", { certificateId });
+
   const result = await pool.query(
     `SELECT COUNT(*) 
      FROM verification_logs
@@ -45,4 +56,10 @@ export const getVerificationCount = async (certificateId) => {
   );
 
   return result.rows[0].count;
+};
+
+module.exports = {
+  logVerification,
+  getVerificationLogs,
+  getVerificationCount,
 };
