@@ -29,10 +29,9 @@ app.set("io", io); // Make io accessible in routes/controllers
 app.use(cors()); // Allow cross-origin requests
 app.use(express.json()); // Parse incoming JSON requests
 
-app.use(requestLogger); // Middleware to log request details
-app.use(securityLogger); // Middleware for security logging
+app.use(requestLogger);   // ✅ request tracking
+app.use(securityLogger);  // ✅ security logs
 
-// Morgan logs HTTP requests and sends logs to Winston logger
 app.use(
   morgan("combined", {
     stream: {
@@ -120,4 +119,5 @@ async function initializeDatabase() {
   }
 }
 
-initializeDatabase(); // Run DB initialization
+
+initializeDatabase();
