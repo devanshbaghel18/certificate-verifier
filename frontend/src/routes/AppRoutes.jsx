@@ -1,24 +1,29 @@
 import { Routes, Route } from "react-router-dom";
 import Home from "../pages/Home";
-import InstitutionLogin from "../pages/InstitutionLogin";
 import Verify from "../pages/Verify";
+import InstitutionLogin from "../pages/InstitutionLogin";
 import About from "../pages/About";
 import Docs from "../pages/Docs";
-import ProtectedRoute from "../components/ProtectedRoute";
+import ProtectedLanding from "../pages/ProtectedLanding";
 
 function AppRoutes() {
+  const token = localStorage.getItem("token");
+
   return (
     <Routes>
-      {/* Public Route */}
+
+      {/* PUBLIC */}
+      <Route path="/" element={<Home />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/docs" element={<Docs />} />
       <Route path="/institution/login" element={<InstitutionLogin />} />
 
-      {/* Protected Routes Wrapper */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/verify" element={<Verify />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/docs" element={<Docs />} />
-      </Route>
+      {/* 🔒 PROTECTED */}
+      <Route
+        path="/verify"
+        element={token ? <Verify /> : <ProtectedLanding />}
+      />
+
     </Routes>
   );
 }

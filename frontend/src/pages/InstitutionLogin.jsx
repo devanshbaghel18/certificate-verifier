@@ -11,7 +11,7 @@ function InstitutionLogin() {
 
     localStorage.setItem("token", credentialResponse.credential);
 
-    navigate("/");
+    navigate("/Verify");
   };
 
   const handleError = () => {

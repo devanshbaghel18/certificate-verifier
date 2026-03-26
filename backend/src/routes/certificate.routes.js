@@ -1,9 +1,14 @@
-const express = require("express"); // Import Express
-const { issueCert, verifyCert } = require("../controllers/certificate.controller"); // Import controller functions
+const express = require("express");
+const multer = require("multer");
+const { issueCert, verifyCert } = require("../controllers/certificate.controller");
 
-const router = express.Router(); // Create router instance
+const router = express.Router();
+const upload = multer({ dest: "uploads/" });
 
-router.post("/issue", issueCert); // Route to issue certificate
-router.get("/verify/:uid", verifyCert); // Route to verify certificate
+// Issue certificate (with file)
+router.post("/issue", upload.single("file"), issueCert);
 
-module.exports = router; // Export router
+// Verify certificate (with file)
+router.post("/verify", upload.single("file"), verifyCert);
+
+module.exports = router;

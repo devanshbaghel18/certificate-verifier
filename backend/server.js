@@ -1,36 +1,37 @@
-const express = require("express"); // Import Express framework
-const http = require("http"); // Import HTTP module for Socket.IO
-const { Server } = require("socket.io"); // Import Socket.IO
-const cors = require("cors"); // Enable Cross-Origin Resource Sharing
-require("dotenv").config(); // Load environment variables from .env
+const express = require("express");
+const cors = require("cors");
+const morgan = require("morgan");
+const multer = require("multer");
+const crypto = require("crypto");
+const fs = require("fs");
+require("dotenv").config();
 
-const logger = require("./src/utils/logger"); // Custom logger (Winston)
-const requestLogger = require("./src/middlewares/requestLogger"); // Logs all incoming requests
-const securityLogger = require("./src/middlewares/securityLogger"); // Logs suspicious activity
-const morgan = require("morgan"); // HTTP request logger middleware
+const logger = require("./src/utils/logger");
+const requestLogger = require("./src/middlewares/requestLogger");
+const securityLogger = require("./src/middlewares/securityLogger");
+const pool = require("./config/db");
 
-const certificateRoutes = require("./src/routes/certificate.routes"); // Import certificate routes
+const { googleLogin } = require("./src/auth/googleAuth");
+const {
+  issueCertificate,
+  verifyCertificate,
+} = require("./src/services/blockchainService");
 
-const { googleLogin } = require("./src/auth/googleAuth"); // Google authentication handler
-const pool = require("./config/db"); // PostgreSQL database connection
+const certificateRoutes = require("./src/routes/certificate.routes");
 
-const app = express(); // Create Express app
-const server = http.createServer(app); // Create HTTP server for Socket.IO
-const io = new Server(server, { cors: { origin: "*" } }); // Create Socket.IO server
+const app = express();
+const upload = multer({ dest: "uploads/" });
 
-// Socket.IO connection handling
-io.on("connection", (socket) => {
-  console.log("Client connected:", socket.id);
-  socket.on("disconnect", () => console.log("Client disconnected:", socket.id));
-});
+// ensure uploads folder exists
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
 
-app.set("io", io); // Make io accessible in routes/controllers
-
-app.use(cors()); // Allow cross-origin requests
-app.use(express.json()); // Parse incoming JSON requests
-
-app.use(requestLogger);   // ✅ request tracking
-app.use(securityLogger);  // ✅ security logs
+// middlewares
+app.use(cors());
+app.use(express.json());
+app.use(requestLogger);
+app.use(securityLogger);
 
 app.use(
   morgan("combined", {
@@ -40,23 +41,19 @@ app.use(
   })
 );
 
-// Register certificate routes
-app.use("/api/certificates", certificateRoutes); // All certificate APIs start with this path
+// ✅ ROUTES (IMPORTANT - after app defined)
+app.use("/api/certificates", certificateRoutes);
 
-logger.info("Server starting..."); // Log server startup
+// Google Auth
+app.post("/auth/google", googleLogin);
 
-// Google Authentication Route
-app.post("/auth/google", googleLogin); // Endpoint for Google login
-
-const PORT = process.env.PORT || 5000; // Set port from env or default 5000
-
-// Health Check API
+// Health
 app.get("/health", (req, res) => {
   res.status(200).json({
-    status: "OK", // Server status
+    status: "OK",
     message: "Backend server is running successfully",
-    timestamp: new Date(), // Current time
-    uptime: process.uptime(), // Server uptime
+    timestamp: new Date(),
+    uptime: process.uptime(),
   });
 });
 
@@ -65,18 +62,18 @@ app.get("/", (req, res) => {
   res.send("Certificate Verifier Backend Running"); // Basic check endpoint
 });
 
-// Get all certificates from DB
+// Get all certificates
 app.get("/certificates", async (req, res) => {
   try {
     const result = await pool.query("SELECT * FROM certificates"); // Fetch all rows
     res.json(result.rows); // Send data
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Database error" }); // Handle DB error
+    logger.error(error.message);
+    res.status(500).json({ error: "Database error" });
   }
 });
 
-// Insert certificate manually (basic test API)
+// Insert certificate (manual)
 app.post("/certificates", async (req, res) => {
   const { certificate_hash, issuer_name } = req.body;
 
@@ -90,18 +87,126 @@ app.post("/certificates", async (req, res) => {
 
     res.status(201).json(result.rows[0]); // Return inserted record
   } catch (error) {
-    console.error(error);
+    logger.error(error.message);
     res.status(400).json({ error: error.message });
   }
 });
 
-// Start server
-server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-  logger.info(`Server running on http://localhost:${PORT}`);
+// Issue Certificate on Blockchain (old)
+app.post("/issue-blockchain", async (req, res) => {
+  try {
+    const { id, student, course, institution } = req.body;
+
+    const result = await issueCertificate(
+      id,
+      student,
+      course,
+      institution
+    );
+
+    res.json({ success: true, message: result });
+  } catch (error) {
+    logger.error(error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-// Initialize DB table (if not exists)
+// Verify Certificate from Blockchain
+app.get("/verify-blockchain/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const certificate = await verifyCertificate(id);
+
+    res.json({
+      certificateId: certificate[0],
+      studentName: certificate[1],
+      courseName: certificate[2],
+      institutionName: certificate[3],
+      issueDate: Number(certificate[4]),
+    });
+  } catch (error) {
+    logger.error(error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+
+
+// Verify via file
+app.post("/verify-file", upload.single("file"), async (req, res) => {
+  try {
+    const file = req.file;
+    if (!file) return res.status(400).json({ valid: false });
+
+    const fileBuffer = fs.readFileSync(file.path);
+
+    const hash = crypto
+      .createHash("sha256")
+      .update(fileBuffer)
+      .digest("hex");
+
+    const result = await pool.query(
+      "SELECT * FROM certificates WHERE certificate_hash = $1",
+      [hash]
+    );
+
+    fs.unlinkSync(file.path);
+
+    if (result.rows.length > 0) {
+      return res.json({ valid: true, data: result.rows[0] });
+    }
+
+    res.json({ valid: false });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ valid: false });
+  }
+});
+
+// Issue via file
+app.post("/issue-certificate", upload.single("file"), async (req, res) => {
+  try {
+    const { student, course, institution } = req.body;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    const fileBuffer = fs.readFileSync(file.path);
+
+    const hash = crypto
+      .createHash("sha256")
+      .update(fileBuffer)
+      .digest("hex");
+
+    await pool.query(
+      "INSERT INTO certificates (certificate_hash, issuer_name) VALUES ($1, $2)",
+      [hash, institution]
+    );
+
+    const blockchainResult = await issueCertificate(
+      hash,
+      student,
+      course,
+      institution
+    );
+
+    fs.unlinkSync(file.path);
+
+    res.json({
+      success: true,
+      hash,
+      blockchain: blockchainResult,
+    });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// DB init
 async function initializeDatabase() {
   try {
     await pool.query(`
@@ -115,9 +220,16 @@ async function initializeDatabase() {
 
     console.log("Database connected & table ready");
   } catch (err) {
-    console.error("Database error:", err);
+    logger.error(err.message);
   }
 }
 
-
 initializeDatabase();
+
+// Start server
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+  logger.info(`Server running on http://localhost:${PORT}`);
+});

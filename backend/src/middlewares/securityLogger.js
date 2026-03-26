@@ -1,7 +1,10 @@
 const logger = require("../utils/logger");
 
 module.exports = (req, res, next) => {
-  if (req.method === "POST" && Object.keys(req.body).length === 0) {
+  const hasBody = req.body && Object.keys(req.body).length > 0;
+  const hasFile = req.file || req.files;
+
+  if (req.method === "POST" && !hasBody && !hasFile) {
     logger.warn("Empty request body", {
       url: req.originalUrl,
       ip: req.ip,

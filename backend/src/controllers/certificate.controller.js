@@ -1,75 +1,138 @@
-const {
-  createCertificate,
-  getCertificateByUID,
-} = require("../models/certificate.model"); // DB functions
+const crypto = require("crypto");
+const fs = require("fs");
 
-const logger = require("../utils/logger"); // Logger
+const logger = require("../utils/logger");
+const pool = require("../../config/db");
 
 const {
   issueCertificate,
   verifyCertificate,
-} = require("../services/blockchainService"); // Blockchain functions
+} = require("../services/blockchainService");
 
-// Issue Certificate
+// Issue certificate
 const issueCert = async (req, res) => {
+  let file;
+
   try {
-    const { uid, student, course, institution } = req.body;
-    const io = req.app.get("io");
+    // ✅ SAFE BODY HANDLING (FIXED)
+    const student = req.body?.student || "Unknown";
+    const course = req.body?.course || "Unknown";
+    const institution = req.body?.institution || "Unknown";
 
-    console.log("NEW CONTROLLER HIT"); // Debug log
+    file = req.file;
 
-    logger.info("Issue certificate request received", { uid }); // Log request
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-    // Call blockchain
-    const result = await issueCertificate(uid, student, course, institution, io);
+    console.log("BODY:", req.body); // debug
 
-    // Store in DB
-    const cert = await createCertificate(
-      uid,
-      null,
-      null,
-      "hash_here",
-      result.txHash, // Store real txHash
-      process.env.CONTRACT_ADDRESS
+    const fileBuffer = fs.readFileSync(file.path);
+
+    const hash = crypto
+      .createHash("sha256")
+      .update(fileBuffer)
+      .digest("hex");
+
+    logger.info("Generated certificate hash", { hash });
+
+    // Check duplicate
+    const existing = await pool.query(
+      "SELECT * FROM certificates WHERE certificate_hash = $1",
+      [hash]
+    );
+
+    console.log("ISSUE HASH:", hash);
+
+    if (existing.rows.length > 0) {
+      return res.status(400).json({
+        error: "Certificate already exists",
+      });
+    }
+
+    // 🔥 FIRST store on blockchain
+    const tx = await issueCertificate(
+      hash,
+      student,
+      course,
+      institution
+    );
+
+    // 🔥 THEN store in DB (only if blockchain succeeds)
+    await pool.query(
+      "INSERT INTO certificates (certificate_hash, issuer_name) VALUES ($1, $2)",
+      [hash, institution]
     );
 
     res.json({
       success: true,
-      message: result.message,
-      txHash: result.txHash,
-      cert,
+      hash,
+      transaction: tx,
     });
 
   } catch (err) {
-    logger.error("Error issuing certificate", { error: err.message });
-
+    logger.error(err.message);
     res.status(500).json({ error: err.message });
+
+  } finally {
+    if (file && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
   }
 };
 
-// Verify Certificate
+// Verify certificate
 const verifyCert = async (req, res) => {
+  let file;
+
   try {
-    const { uid } = req.params;
+    file = req.file;
 
-    logger.info("Verification request received", { uid });
+    if (!file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
 
-    const blockchainData = await verifyCertificate(uid); // Get blockchain data
-    const dbData = await getCertificateByUID(uid); // Get DB data
+    const fileBuffer = fs.readFileSync(file.path);
 
+    const hash = crypto
+      .createHash("sha256")
+      .update(fileBuffer)
+      .digest("hex");
+
+
+
+    const result = await pool.query(
+      "SELECT * FROM certificates WHERE certificate_hash = $1",
+      [hash]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ valid: false });
+    }
+
+    let blockchainData = null;
+
+    try {
+      blockchainData = await verifyCertificate(hash);
+    } catch (err) {
+      console.log("Blockchain not found for this hash");
+    }
+    console.log("VERIFY HASH:", hash);
     res.json({
+      valid: true,
+      certificate: result.rows[0],
       blockchain: blockchainData,
-      database: dbData,
     });
 
   } catch (err) {
-    logger.error("Verification failed", { error: err.message });
-
+    logger.error(err.message);
     res.status(500).json({ error: err.message });
+
+  } finally {
+    if (file && fs.existsSync(file.path)) {
+      fs.unlinkSync(file.path);
+    }
   }
 };
 
-module.exports = {
-  issueCert,
-  verifyCert,
-};
+module.exports = { issueCert, verifyCert };
