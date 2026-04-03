@@ -27,7 +27,7 @@ const abi = [
 ];
 
 // Connects backend to ethereum node. rpcUrl= local hardhat or Alchemy RPC
-const provider = new ethers.JsonRpcProvider(rpcUrl); 
+const provider = new ethers.JsonRpcProvider(rpcUrl);
 
 // ADDED
 logger.info("Blockchain provider initialized", { rpcUrl });
@@ -48,7 +48,7 @@ logger.info("Smart contract connected", { contractAddress });
 async function issueCertificate(id, student, course, institution, io) {
 
   try {
-    io && io.emit("tx-status", { id, status: "sending" }); 
+    io && io.emit("tx-status", { id, status: "sending" });
 
     // ADDED
     logger.info("Blockchain TX started", { id, student });
