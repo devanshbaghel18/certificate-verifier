@@ -27,7 +27,11 @@ if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
 }
 
-app.use(cors());
+// FIXED: proper CORS for deployed frontend
+app.use(cors({
+  origin: ["https://certificate-verifier.vercel.app", "http://localhost:5173"],
+  credentials: true,
+}));
 app.use(express.json());
 app.use(requestLogger);
 app.use(securityLogger);
@@ -134,7 +138,6 @@ app.post("/verify-file", upload.single("file"), async (req, res) => {
   }
 });
 
-// FIXED: duplicate handling + blockchain non-fatal
 app.post("/issue-certificate", upload.single("file"), async (req, res) => {
   try {
     const { student, course, institution } = req.body;
@@ -154,7 +157,6 @@ app.post("/issue-certificate", upload.single("file"), async (req, res) => {
     const fileBuffer = fs.readFileSync(file.path);
     const hash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
 
-    // Check for duplicate
     const existing = await pool.query(
       "SELECT * FROM certificates WHERE certificate_hash = $1",
       [hash]
@@ -169,13 +171,11 @@ app.post("/issue-certificate", upload.single("file"), async (req, res) => {
       });
     }
 
-    // Save to DB
     await pool.query(
       "INSERT INTO certificates (certificate_hash, issuer_name) VALUES ($1, $2)",
       [hash, institution]
     );
 
-    // Blockchain is optional — won't crash if Hardhat is offline
     let blockchainResult = null;
     try {
       blockchainResult = await issueCertificate(hash, student, course, institution);
