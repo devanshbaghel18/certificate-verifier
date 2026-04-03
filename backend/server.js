@@ -18,36 +18,30 @@ const {
 } = require("./src/services/blockchainService");
 
 const certificateRoutes = require("./src/routes/certificate.routes");
+const viewerRoutes = require("./src/routes/viewer.routes");
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
 
-// ensure uploads folder exists
 if (!fs.existsSync("uploads")) {
   fs.mkdirSync("uploads");
 }
 
-// middlewares
 app.use(cors());
 app.use(express.json());
 app.use(requestLogger);
 app.use(securityLogger);
-
 app.use(
   morgan("combined", {
-    stream: {
-      write: (message) => logger.info(message.trim()), // Save logs via Winston
-    },
+    stream: { write: (message) => logger.info(message.trim()) },
   })
 );
 
-// ✅ ROUTES (IMPORTANT - after app defined)
 app.use("/api/certificates", certificateRoutes);
+app.use("/api/viewer", viewerRoutes);
 
-// Google Auth
 app.post("/auth/google", googleLogin);
 
-// Health
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "OK",
@@ -57,53 +51,39 @@ app.get("/health", (req, res) => {
   });
 });
 
-// Root endpoint
 app.get("/", (req, res) => {
-  res.send("Certificate Verifier Backend Running"); // Basic check endpoint
+  res.send("Certificate Verifier Backend Running");
 });
 
-// Get all certificates
 app.get("/certificates", async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM certificates"); // Fetch all rows
-    res.json(result.rows); // Send data
+    const result = await pool.query("SELECT * FROM certificates ORDER BY issued_at DESC");
+    res.json(result.rows);
   } catch (error) {
     logger.error(error.message);
     res.status(500).json({ error: "Database error" });
   }
 });
 
-// Insert certificate (manual)
 app.post("/certificates", async (req, res) => {
   const { certificate_hash, issuer_name } = req.body;
-
   try {
     const result = await pool.query(
       `INSERT INTO certificates (certificate_hash, issuer_name)
-       VALUES ($1, $2)
-       RETURNING *`,
+       VALUES ($1, $2) RETURNING *`,
       [certificate_hash, issuer_name]
     );
-
-    res.status(201).json(result.rows[0]); // Return inserted record
+    res.status(201).json(result.rows[0]);
   } catch (error) {
     logger.error(error.message);
     res.status(400).json({ error: error.message });
   }
 });
 
-// Issue Certificate on Blockchain (old)
 app.post("/issue-blockchain", async (req, res) => {
   try {
     const { id, student, course, institution } = req.body;
-
-    const result = await issueCertificate(
-      id,
-      student,
-      course,
-      institution
-    );
-
+    const result = await issueCertificate(id, student, course, institution);
     res.json({ success: true, message: result });
   } catch (error) {
     logger.error(error.message);
@@ -111,13 +91,10 @@ app.post("/issue-blockchain", async (req, res) => {
   }
 });
 
-// Verify Certificate from Blockchain
 app.get("/verify-blockchain/:id", async (req, res) => {
   try {
     const id = req.params.id;
-
     const certificate = await verifyCertificate(id);
-
     res.json({
       certificateId: certificate[0],
       studentName: certificate[1],
@@ -131,20 +108,13 @@ app.get("/verify-blockchain/:id", async (req, res) => {
   }
 });
 
-
-
-// Verify via file
 app.post("/verify-file", upload.single("file"), async (req, res) => {
   try {
     const file = req.file;
     if (!file) return res.status(400).json({ valid: false });
 
     const fileBuffer = fs.readFileSync(file.path);
-
-    const hash = crypto
-      .createHash("sha256")
-      .update(fileBuffer)
-      .digest("hex");
+    const hash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
 
     const result = await pool.query(
       "SELECT * FROM certificates WHERE certificate_hash = $1",
@@ -164,7 +134,7 @@ app.post("/verify-file", upload.single("file"), async (req, res) => {
   }
 });
 
-// Issue via file
+// FIXED: duplicate handling + blockchain non-fatal
 app.post("/issue-certificate", upload.single("file"), async (req, res) => {
   try {
     const { student, course, institution } = req.body;
@@ -174,39 +144,54 @@ app.post("/issue-certificate", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "No file uploaded" });
     }
 
+    if (!student || !course || !institution) {
+      if (file) fs.unlinkSync(file.path);
+      return res.status(400).json({
+        error: "Missing fields: student, course, and institution are required",
+      });
+    }
+
     const fileBuffer = fs.readFileSync(file.path);
+    const hash = crypto.createHash("sha256").update(fileBuffer).digest("hex");
 
-    const hash = crypto
-      .createHash("sha256")
-      .update(fileBuffer)
-      .digest("hex");
+    // Check for duplicate
+    const existing = await pool.query(
+      "SELECT * FROM certificates WHERE certificate_hash = $1",
+      [hash]
+    );
 
+    if (existing.rows.length > 0) {
+      fs.unlinkSync(file.path);
+      return res.status(409).json({
+        error: "This certificate has already been issued.",
+        hash,
+        certificate: existing.rows[0],
+      });
+    }
+
+    // Save to DB
     await pool.query(
       "INSERT INTO certificates (certificate_hash, issuer_name) VALUES ($1, $2)",
       [hash, institution]
     );
 
-    const blockchainResult = await issueCertificate(
-      hash,
-      student,
-      course,
-      institution
-    );
+    // Blockchain is optional — won't crash if Hardhat is offline
+    let blockchainResult = null;
+    try {
+      blockchainResult = await issueCertificate(hash, student, course, institution);
+    } catch (blockchainErr) {
+      logger.warn("Blockchain store skipped (node offline?): " + blockchainErr.message);
+    }
 
     fs.unlinkSync(file.path);
 
-    res.json({
-      success: true,
-      hash,
-      blockchain: blockchainResult,
-    });
+    res.json({ success: true, hash, blockchain: blockchainResult });
   } catch (err) {
     logger.error(err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DB init
 async function initializeDatabase() {
   try {
     await pool.query(`
@@ -217,8 +202,29 @@ async function initializeDatabase() {
         issued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
-
-    console.log("Database connected & table ready");
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY,
+        google_id VARCHAR(255) UNIQUE NOT NULL,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255),
+        picture TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS verification_history (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+        certificate_hash VARCHAR(255),
+        file_name VARCHAR(255),
+        is_valid BOOLEAN,
+        issuer_name VARCHAR(255),
+        issued_at TIMESTAMP,
+        verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log("✅ All tables ready");
   } catch (err) {
     logger.error(err.message);
   }
@@ -226,9 +232,7 @@ async function initializeDatabase() {
 
 initializeDatabase();
 
-// Start server
 const PORT = process.env.PORT || 5000;
-
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   logger.info(`Server running on http://localhost:${PORT}`);

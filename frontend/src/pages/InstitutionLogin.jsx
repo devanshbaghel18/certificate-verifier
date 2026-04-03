@@ -6,13 +6,14 @@ import { Link } from "react-router-dom";
 function InstitutionLogin() {
   const navigate = useNavigate();
 
-  const handleSuccess = (credentialResponse) => {
-    console.log("Login Success:", credentialResponse);
+const handleSuccess = (credentialResponse) => {
+  console.log("Login Success:", credentialResponse);
 
-    localStorage.setItem("token", credentialResponse.credential);
+  localStorage.setItem("token", credentialResponse.credential);
 
-    navigate("/Verify");
-  };
+  
+  navigate("/university/dashboard");
+};
 
   const handleError = () => {
     console.log("Login Failed");

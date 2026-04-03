@@ -1,3 +1,70 @@
+#!/bin/bash
+
+# 1. ViewerLogin.jsx
+cat > pages/ViewerLogin.jsx << 'EOF'
+import { GoogleLogin } from "@react-oauth/google";
+import { useNavigate, Link } from "react-router-dom";
+import { FileCheck } from "lucide-react";
+import { viewerLogin } from "../services/api";
+
+export default function ViewerLogin() {
+  const navigate = useNavigate();
+
+  const handleSuccess = async (credentialResponse) => {
+    try {
+      const { user } = await viewerLogin(credentialResponse.credential);
+      localStorage.setItem("viewerToken", credentialResponse.credential);
+      localStorage.setItem("viewerUser", JSON.stringify(user));
+      navigate("/verify");
+    } catch (err) {
+      console.error("Viewer login failed", err);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center px-6">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-10">
+          <Link to="/" className="inline-flex items-center gap-3 mb-6">
+            <div className="w-12 h-12 rounded-xl bg-neutral-900 border border-neutral-700 flex items-center justify-center">
+              <FileCheck className="w-6 h-6 text-green-400" />
+            </div>
+            <span className="text-xl font-semibold">CertiChain</span>
+          </Link>
+          <h1 className="text-3xl font-bold mb-2">Viewer Login</h1>
+          <p className="text-gray-400 text-sm">
+            Sign in to verify certificates and track your verification history.
+          </p>
+        </div>
+        <div className="bg-neutral-900/80 border border-neutral-800 rounded-xl p-8 space-y-6">
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleSuccess}
+              onError={() => console.log("Login Failed")}
+              theme="outline"
+              size="large"
+              width="300"
+            />
+          </div>
+          <div className="border-t border-gray-800 pt-4 text-center text-sm text-gray-500">
+            Just want to verify without saving history?{" "}
+            <Link to="/verify" className="text-green-400 hover:underline">
+              Continue without login
+            </Link>
+          </div>
+        </div>
+        <div className="flex justify-between mt-6 text-sm text-gray-500">
+          <Link to="/" className="hover:text-white transition">← Back to Home</Link>
+          <Link to="/institution/login" className="hover:text-white transition">Institution Login →</Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+EOF
+
+# 2. Verify.jsx
+cat > pages/Verify.jsx << 'EOF'
 import { Upload, Search, CheckCircle, AlertCircle, Loader, X, FileText, History, LogIn } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
@@ -224,3 +291,146 @@ function Verify() {
 }
 
 export default Verify;
+EOF
+
+# 3. AppRoutes.jsx
+cat > routes/AppRoutes.jsx << 'EOF'
+import { Routes, Route } from "react-router-dom";
+import Home from "../pages/Home";
+import Verify from "../pages/Verify";
+import InstitutionLogin from "../pages/InstitutionLogin";
+import ViewerLogin from "../pages/ViewerLogin";
+import About from "../pages/About";
+import Docs from "../pages/Docs";
+import ProtectedLanding from "../pages/ProtectedLanding";
+import UniversityDashboard from "../pages/UniversityDashboard";
+
+function AppRoutes() {
+  const institutionToken = localStorage.getItem("token");
+
+  return (
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/docs" element={<Docs />} />
+      <Route path="/verify" element={<Verify />} />
+      <Route path="/viewer/login" element={<ViewerLogin />} />
+      <Route path="/institution/login" element={<InstitutionLogin />} />
+      <Route path="/university/dashboard" element={institutionToken ? <UniversityDashboard /> : <ProtectedLanding />} />
+    </Routes>
+  );
+}
+
+export default AppRoutes;
+EOF
+
+# 4. Navbar.jsx
+cat > components/Navbar.jsx << 'EOF'
+import { Link, useNavigate } from "react-router-dom";
+
+function Navbar() {
+  const navigate = useNavigate();
+  const institutionToken = localStorage.getItem("token");
+  const viewerToken = localStorage.getItem("viewerToken");
+  const viewerUser = JSON.parse(localStorage.getItem("viewerUser") || "null");
+
+  const handleInstitutionLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/institution/login");
+  };
+
+  const handleViewerLogout = () => {
+    localStorage.removeItem("viewerToken");
+    localStorage.removeItem("viewerUser");
+    navigate("/");
+  };
+
+  return (
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-gray-800 px-6 py-4 flex items-center justify-between">
+      <Link to="/" className="text-green-400 font-bold text-lg">CertiChain</Link>
+      <div className="flex items-center gap-6 text-sm">
+        <Link to="/" className="text-gray-400 hover:text-white transition-colors">Home</Link>
+        <Link to="/verify" className="text-gray-400 hover:text-white transition-colors">Verify</Link>
+        <Link to="/about" className="text-gray-400 hover:text-white transition-colors">About</Link>
+
+        {institutionToken && (
+          <>
+            <Link to="/university/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</Link>
+            <button onClick={handleInstitutionLogout} className="text-red-400 hover:text-red-300 transition-colors">Logout</button>
+          </>
+        )}
+
+        {!institutionToken && viewerToken && (
+          <>
+            {viewerUser?.picture && <img src={viewerUser.picture} className="w-7 h-7 rounded-full" alt="" />}
+            <button onClick={handleViewerLogout} className="text-gray-500 hover:text-red-400 transition-colors">Sign out</button>
+          </>
+        )}
+
+        {!institutionToken && !viewerToken && (
+          <div className="flex items-center gap-3">
+            <Link to="/viewer/login" className="text-gray-400 hover:text-white transition-colors">Sign in</Link>
+            <Link to="/institution/login" className="px-4 py-1.5 border border-gray-700 hover:border-green-400 rounded-lg transition-colors">Institution</Link>
+          </div>
+        )}
+      </div>
+    </nav>
+  );
+}
+
+export default Navbar;
+EOF
+
+# 5. api.js
+cat > services/api.js << 'EOF'
+import axios from "axios";
+
+const API = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL,
+});
+
+export const checkHealth = async () => {
+  const response = await API.get("/health");
+  return response.data;
+};
+
+export const issueCertificate = async (formData) => {
+  const response = await API.post("/issue-certificate", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const getIssuedCertificates = async () => {
+  const response = await API.get("/certificates");
+  return response.data;
+};
+
+export const verifyCertificate = async (file) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await API.post("/verify-file", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return response.data;
+};
+
+export const viewerLogin = async (credential) => {
+  const response = await API.post("/api/viewer/login", { credential });
+  return response.data;
+};
+
+export const saveVerificationHistory = async ({ token, certificateHash, fileName, isValid, issuerName, issuedAt }) => {
+  const response = await API.post("/api/viewer/history", {
+    token, certificateHash, fileName, isValid, issuerName, issuedAt,
+  });
+  return response.data;
+};
+
+export const getVerificationHistory = async (token) => {
+  const response = await API.get("/api/viewer/history", { params: { token } });
+  return response.data;
+};
+EOF
+
+echo "✅ All 5 files created successfully"
