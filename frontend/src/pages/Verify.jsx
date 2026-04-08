@@ -78,141 +78,163 @@ function Verify() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <section className="pt-32 pb-16 border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <span className="text-xs font-mono text-green-400 border border-green-500/30 bg-green-500/10 px-3 py-1 rounded-full">
-            Open Verification — No login required
+    <div className="min-h-screen bg-brand-darker text-white font-sans overflow-hidden">
+
+      <section className="relative pt-40 pb-16">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-green/5 rounded-full blur-[150px] pointer-events-none"></div>
+        <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
+          <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-brand-green border border-brand-green/30 bg-brand-green/10 px-4 py-1.5 rounded-full shadow-[0_0_10px_rgba(0,209,90,0.1)]">
+            <CheckCircle size={14} /> Open Verification
           </span>
-          <h1 className="text-4xl font-bold mt-4 mb-3">Verify a Certificate</h1>
-          <p className="text-gray-400">Upload the PDF — we generate its SHA-256 hash and check it against the blockchain.</p>
+          <h1 className="text-5xl font-bold mt-6 mb-4 tracking-tight">Verify a <span className="text-brand-green">Certificate</span></h1>
+          <p className="text-[#a3b3a7] text-lg max-w-2xl mx-auto">Upload the PDF document below. Our system will generate a cryptographic SHA-256 hash completely on your device and check it against the Ethereum blockchain securely.</p>
         </div>
       </section>
 
-      <section className="py-20">
-        <div className="max-w-2xl mx-auto px-6 space-y-6">
+      <section className="pb-32 relative z-10">
+        <div className="max-w-2xl mx-auto px-6 space-y-8">
 
+          {/* User Status Bar */}
           {!viewerToken ? (
-            <div className="flex items-center justify-between border border-gray-800 rounded-xl px-5 py-3 bg-gray-900/40 text-sm">
-              <p className="text-gray-400"><span className="text-white font-medium">Want to save your history?</span> Sign in as a viewer.</p>
-              <Link to="/viewer/login" className="flex items-center gap-1.5 text-green-400 hover:text-green-300 transition-colors font-medium">
-                <LogIn size={14} /> Sign in
+            <div className="flex flex-col sm:flex-row items-center justify-between border border-[#1a2c1f] rounded-2xl px-6 py-4 bg-[#0c1610] shadow-xl text-sm gap-4">
+              <p className="text-[#a3b3a7]"><span className="text-white font-semibold">Ready to track your validations?</span> Sign in to access your history dashboard.</p>
+              <Link to="/viewer/login">
+                <button className="flex items-center gap-2 px-5 py-2 bg-[#16271c] hover:bg-brand-highlight text-brand-green font-bold rounded-lg border border-brand-green/30 transition-all shadow-[0_0_15px_rgba(0,209,90,0.1)] hover:shadow-[0_0_20px_rgba(0,209,90,0.2)]">
+                  <LogIn size={16} /> Login
+                </button>
               </Link>
             </div>
           ) : (
-            <div className="flex items-center justify-between border border-gray-800 rounded-xl px-5 py-3 bg-gray-900/40 text-sm">
-              <div className="flex items-center gap-2">
-                {viewerUser?.picture && <img src={viewerUser.picture} className="w-6 h-6 rounded-full" alt="" />}
-                <span className="text-gray-300">{viewerUser?.name}</span>
-                <span className="text-gray-600">·</span>
-                <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-1 text-green-400 hover:text-green-300">
-                  <History size={13} /> History ({history.length})
-                </button>
-              </div>
-              <button onClick={handleLogout} className="text-gray-500 hover:text-red-400 transition-colors text-xs">Sign out</button>
-            </div>
-          )}
-
-          {showHistory && viewerToken && (
-            <div className="border border-gray-800 rounded-xl overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-800 bg-gray-900/40">
-                <p className="text-sm font-medium">Verification History</p>
-              </div>
-              {historyLoading ? (
-                <div className="p-6 text-center text-gray-600 text-sm"><Loader size={16} className="animate-spin mx-auto mb-2" />Loading...</div>
-              ) : history.length === 0 ? (
-                <p className="p-6 text-center text-gray-600 text-sm">No verifications yet.</p>
-              ) : (
-                <div className="divide-y divide-gray-800">
-                  {history.map((h) => (
-                    <div key={h.id} className="flex items-center justify-between px-4 py-3 text-sm">
-                      <div>
-                        <p className="text-gray-300 font-medium">{h.file_name}</p>
-                        <p className="text-xs text-gray-600 font-mono mt-0.5">{h.certificate_hash?.slice(0, 24)}...</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        {h.is_valid
-                          ? <span className="text-xs px-2 py-1 rounded bg-green-500/10 text-green-400">Valid</span>
-                          : <span className="text-xs px-2 py-1 rounded bg-red-500/10 text-red-400">Invalid</span>}
-                        <span className="text-xs text-gray-600">{new Date(h.verified_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  ))}
+            <div className="flex items-center justify-between border border-[#1a2c1f] rounded-2xl px-6 py-4 bg-[#0c1610] shadow-xl text-sm">
+              <div className="flex items-center gap-3">
+                {viewerUser?.picture ? (
+                  <img src={viewerUser.picture} className="w-8 h-8 rounded-full border border-brand-green/30" alt="profile cursor" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-brand-green/20 border border-brand-green/30"></div>
+                )}
+                <div>
+                  <span className="text-white font-semibold block leading-tight">{viewerUser?.name}</span>
+                  <button onClick={() => setShowHistory(!showHistory)} className="flex items-center gap-1.5 text-brand-green hover:text-brand-greenHover transition-colors mt-0.5 text-xs font-medium">
+                    <History size={12} /> View History ({history.length})
+                  </button>
                 </div>
-              )}
+              </div>
+              <button onClick={handleLogout} className="px-4 py-1.5 rounded-md border border-gray-700 text-[#a3b3a7] hover:text-white hover:bg-gray-800 transition-colors text-xs font-semibold uppercase tracking-wider">Sign out</button>
             </div>
           )}
 
+          {/* Upload Box */}
           {!file ? (
             <div
-              className={`border-2 border-dashed rounded-xl p-14 flex flex-col items-center text-center gap-4 cursor-pointer transition-colors ${dragging ? "border-green-500 bg-green-500/5" : "border-gray-700 hover:border-gray-500"}`}
+              className={`border-2 border-dashed rounded-3xl p-16 flex flex-col items-center text-center gap-5 cursor-pointer transition-all duration-300 shadow-2xl relative overflow-hidden group ${
+                dragging 
+                ? "border-brand-green bg-brand-green/10 scale-[1.02] shadow-[0_0_30px_rgba(0,209,90,0.2)]" 
+                : "border-[#2a3c2f] bg-[#0c1610] hover:border-brand-green/50 hover:bg-[#0f1c14]"
+              }`}
               onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
               onDragLeave={() => setDragging(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
             >
-              <Upload size={40} className="text-green-400" />
+              <div className="absolute inset-0 bg-gradient-to-b from-brand-green/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></div>
+              
+              <div className="w-20 h-20 rounded-2xl bg-[#16271c] border border-brand-green/20 flex items-center justify-center shadow-[0_0_15px_rgba(0,209,90,0.15)] group-hover:scale-110 transition-transform duration-300">
+                <Upload size={36} className="text-brand-green" />
+              </div>
+              
               <div>
-                <p className="text-lg font-medium">Drop certificate PDF here</p>
-                <p className="text-gray-500 text-sm mt-1">or click to browse</p>
+                <p className="text-xl font-bold text-white mb-2">Drop certificate PDF here</p>
+                <p className="text-[#a3b3a7] font-medium">or click anywhere to browse your files</p>
               </div>
               <input ref={fileInputRef} type="file" accept="application/pdf" className="hidden" onChange={(e) => handleFileSelect(e.target.files[0])} />
             </div>
           ) : (
-            <div className="border border-gray-700 rounded-xl p-5 bg-gray-900/40 space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
-                    <FileText size={18} className="text-green-400" />
+            // Selected File View
+            <div className="border border-[#1a2c1f] rounded-3xl p-8 bg-[#0c1610] shadow-2xl space-y-6">
+              
+              <div className="flex items-center justify-between pb-6 border-b border-[#1a2c1f]">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-brand-green/10 border border-brand-green/20 flex items-center justify-center shadow-[0_4px_10px_rgba(0,209,90,0.1)]">
+                    <FileText size={24} className="text-brand-green" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium">{file.name}</p>
-                    <p className="text-xs text-gray-500">{(file.size / 1024).toFixed(1)} KB</p>
+                    <p className="font-semibold text-white text-lg leading-tight mb-1">{file.name}</p>
+                    <p className="text-sm text-[#a3b3a7] font-medium">{(file.size / 1024).toFixed(1)} KB • PDF Document</p>
                   </div>
                 </div>
-                <button onClick={handleRemove} className="text-gray-600 hover:text-red-400 transition-colors"><X size={16} /></button>
+                <button onClick={handleRemove} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#16271c] text-[#a3b3a7] hover:text-white hover:bg-red-500/20 hover:border-red-500/30 transition-all border border-transparent"><X size={18} /></button>
               </div>
+
               {hash && (
-                <div className="bg-black border border-gray-800 rounded-lg p-3">
-                  <p className="text-xs text-gray-500 mb-1">SHA-256 Hash</p>
-                  <p className="text-xs font-mono text-green-400 break-all">{hash}</p>
+                <div className="bg-[#040804] border border-[#1a2c1f] rounded-xl p-5 shadow-inner">
+                  <div className="flex justify-between items-center mb-2">
+                     <p className="text-sm font-semibold text-[#a3b3a7]">Cryptographic Signature (SHA-256)</p>
+                     <span className="flex h-2 w-2 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-green opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-brand-green"></span>
+                     </span>
+                  </div>
+                  <p className="text-sm font-mono text-brand-green break-all leading-relaxed bg-[#0c1610] p-3 rounded-lg border border-[#1a2c1f]">{hash}</p>
                 </div>
               )}
+
               <button
                 onClick={handleVerify}
                 disabled={status === "loading"}
-                className="w-full py-3 bg-green-500 hover:bg-green-600 disabled:bg-green-900 disabled:text-green-700 text-black font-medium rounded-lg flex items-center justify-center gap-2 transition-colors"
+                className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-3 transition-all duration-300 shadow-[0_4px_20px_rgba(0,209,90,0.2)] hover:shadow-[0_4px_25px_rgba(0,209,90,0.4)]
+                  ${status === "loading" 
+                    ? "bg-[#16271c] text-brand-green border border-brand-green/30 cursor-wait" 
+                    : "bg-brand-green hover:bg-brand-greenHover text-brand-darker"
+                  }`}
               >
-                {status === "loading" ? <><Loader size={16} className="animate-spin" /> Checking blockchain...</> : <><Search size={16} /> Verify Certificate</>}
+                {status === "loading" ? (
+                  <><Loader size={20} className="animate-spin" /> Querying Blockchain...</>
+                ) : (
+                  <><Search size={20} /> Verify Authenticity</>
+                )}
               </button>
+
             </div>
           )}
 
+          {/* Results Views */}
           {status === "valid" && (
-            <div className="border border-green-500/40 bg-green-500/10 rounded-xl p-6 space-y-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle size={22} className="text-green-400 flex-shrink-0" />
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 border border-green-500/40 bg-[#0c1610] rounded-3xl p-8 space-y-6 shadow-[0_10px_40px_rgba(0,209,90,0.15)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-green-500/10 rounded-full blur-[50px] pointer-events-none"></div>
+              
+              <div className="flex items-start gap-4">
+                <CheckCircle size={32} className="text-brand-green flex-shrink-0 mt-1" />
                 <div>
-                  <h4 className="font-semibold text-lg">Certificate is Valid</h4>
-                  <p className="text-gray-400 text-sm">Authentic and recorded on the blockchain.</p>
+                  <h4 className="font-bold text-2xl text-white">Verification Successful</h4>
+                  <p className="text-[#a3b3a7] text-sm mt-1 leading-relaxed">This document is authentic. A perfect cryptographic match was found registered on the Ethereum Blockchain.</p>
                 </div>
               </div>
+              
               {result && (
-                <div className="border-t border-green-500/20 pt-4 space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-gray-400">Issuer</span><span className="text-white">{result.issuer_name}</span></div>
-                  <div className="flex justify-between"><span className="text-gray-400">Issued At</span><span className="text-white">{result.issued_at ? new Date(result.issued_at).toLocaleDateString() : "—"}</span></div>
-                  <div className="flex justify-between gap-4"><span className="text-gray-400 flex-shrink-0">Hash</span><span className="text-green-400 font-mono text-xs break-all text-right">{result.certificate_hash}</span></div>
+                <div className="bg-[#040804] border border-[#1a2c1f] rounded-2xl p-6 space-y-4 shadow-inner">
+                  <div className="grid grid-cols-3 gap-4 border-b border-[#1a2c1f] pb-4">
+                    <div className="col-span-1 text-[#a3b3a7] font-medium text-sm">Issuing Institution</div>
+                    <div className="col-span-2 text-white font-semibold text-right">{result.issuer_name}</div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 border-b border-[#1a2c1f] pb-4">
+                    <div className="col-span-1 text-[#a3b3a7] font-medium text-sm">Issuance Date</div>
+                    <div className="col-span-2 text-white font-semibold text-right">{result.issued_at ? new Date(result.issued_at).toLocaleDateString([], { dateStyle: 'long' }) : "—"}</div>
+                  </div>
+                  <div className="flex flex-col gap-2 pt-2">
+                    <div className="text-[#a3b3a7] font-medium text-sm">Blockchain Hash</div>
+                    <div className="text-brand-green font-mono text-xs break-all bg-[#0a110a] p-3 rounded-lg border border-[#1a2c1f] shadow-inner text-center">{result.certificate_hash}</div>
+                  </div>
                 </div>
               )}
             </div>
           )}
 
           {status === "invalid" && (
-            <div className="border border-red-500/40 bg-red-500/10 rounded-xl p-6 flex items-center gap-3">
-              <AlertCircle size={22} className="text-red-400 flex-shrink-0" />
+            <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 border border-red-500/40 bg-[#160b0b] rounded-3xl p-8 flex items-start gap-4 shadow-[0_10px_40px_rgba(239,68,68,0.1)]">
+              <AlertCircle size={32} className="text-red-500 flex-shrink-0 mt-1" />
               <div>
-                <h4 className="font-semibold text-lg">Certificate Not Found</h4>
-                <p className="text-gray-400 text-sm">No record found. This certificate may be fake or not yet registered.</p>
+                <h4 className="font-bold text-2xl text-white mb-2">Verification Failed</h4>
+                <p className="text-[#a3b3a7] text-sm leading-relaxed">No identical cryptographic record was found on the blockchain. This document may be fraudulent, altered, or not yet officially registered by the institution.</p>
               </div>
             </div>
           )}
