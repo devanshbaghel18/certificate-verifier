@@ -10,8 +10,12 @@ export const checkHealth = async () => {
 };
 
 export const issueCertificate = async (formData) => {
+  const token = localStorage.getItem("token");
   const response = await API.post("/issue-certificate", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    headers: { 
+      "Content-Type": "multipart/form-data",
+      Authorization: `Bearer ${token}`
+    },
   });
   return response.data;
 };
@@ -44,5 +48,36 @@ export const saveVerificationHistory = async ({ token, certificateHash, fileName
 
 export const getVerificationHistory = async (token) => {
   const response = await API.get("/api/viewer/history", { params: { token } });
+  return response.data;
+};
+
+export const institutionLogin = async (credential) => {
+  const response = await API.post("/api/institution/login", { credential });
+  return response.data;
+};
+
+export const adminLogin = async (credential) => {
+  const response = await API.post("/api/admin/login", { credential });
+  return response.data;
+};
+
+export const getAdminInstitutions = async (token) => {
+  const response = await API.get("/api/admin/institutions", {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const updateAdminInstitutionStatus = async (id, status, token) => {
+  const response = await API.put(`/api/admin/institutions/${id}/status`, { status }, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  return response.data;
+};
+
+export const deleteAdminInstitution = async (id, token) => {
+  const response = await API.delete(`/api/admin/institutions/${id}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
   return response.data;
 };

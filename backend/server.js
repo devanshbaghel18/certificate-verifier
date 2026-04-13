@@ -1,4 +1,6 @@
 const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
 const cors = require("cors");
 const morgan = require("morgan");
 const multer = require("multer");
@@ -19,8 +21,25 @@ const {
 
 const certificateRoutes = require("./src/routes/certificate.routes");
 const viewerRoutes = require("./src/routes/viewer.routes");
+const institutionRoutes = require("./src/routes/institution.routes");
+const adminRoutes = require("./src/routes/admin.routes");
+const { verifyInstitutionToken } = require("./src/middlewares/authMiddleware");
 
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: ["https://certificate-verifier.vercel.app", "http://localhost:5173"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    credentials: true,
+  }
+});
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  logger.info("Admin dashboard socket connected: " + socket.id);
+});
+
 const upload = multer({ dest: "uploads/" });
 
 if (!fs.existsSync("uploads")) {
@@ -43,6 +62,8 @@ app.use(
 
 app.use("/api/certificates", certificateRoutes);
 app.use("/api/viewer", viewerRoutes);
+app.use("/api/institution", institutionRoutes);
+app.use("/api/admin", adminRoutes);
 
 app.post("/auth/google", googleLogin);
 
@@ -138,7 +159,7 @@ app.post("/verify-file", upload.single("file"), async (req, res) => {
   }
 });
 
-app.post("/issue-certificate", upload.single("file"), async (req, res) => {
+app.post("/issue-certificate", verifyInstitutionToken, upload.single("file"), async (req, res) => {
   try {
     const { student, course, institution } = req.body;
     const file = req.file;
@@ -224,6 +245,15 @@ async function initializeDatabase() {
         verified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS authorized_institutions (
+        id SERIAL PRIMARY KEY,
+        email VARCHAR(255) UNIQUE NOT NULL,
+        name VARCHAR(255) NOT NULL,
+        status VARCHAR(50) DEFAULT 'pending',
+        added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     console.log("✅ All tables ready");
   } catch (err) {
     logger.error(err.message);
@@ -233,7 +263,7 @@ async function initializeDatabase() {
 initializeDatabase();
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   logger.info(`Server running on http://localhost:${PORT}`);
 });
