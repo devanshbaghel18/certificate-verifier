@@ -2,26 +2,28 @@ const { Pool } = require("pg");
 require("dotenv").config();
 const logger = require("../src/utils/logger");
 
-// Create pool
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  connectionString:
-  process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+// Build config: prefer DATABASE_URL if available, otherwise use individual params
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+    }
+  : {
+      host: process.env.DB_HOST || "localhost",
+      port: Number(process.env.DB_PORT) || 5432,
+      user: process.env.DB_USER || "postgres",
+      password: process.env.DB_PASSWORD || "",
+      database: process.env.DB_NAME || "certichain",
+      ssl: false,
+    };
 
-  // NEW (important)
-  max: 10, // max connections
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+poolConfig.max = 10;
+poolConfig.idleTimeoutMillis = 30000;
+poolConfig.connectionTimeoutMillis = 2000;
 
-//  Better connection test
+const pool = new Pool(poolConfig);
+
+// Connection test
 (async () => {
   try {
     const client = await pool.connect();
@@ -29,16 +31,13 @@ const pool = new Pool({
     client.release();
   } catch (err) {
     console.error("❌ PostgreSQL Connection Error:", err.message);
+    logger.error("Database connection error", { error: err.message });
   }
 })();
 
-//  Handle unexpected errors
+// Handle unexpected errors
 pool.on("error", (err) => {
   console.error("❌ Unexpected DB Error:", err.message);
 });
-
-pool.connect()
-  .then(() => logger.info("Database connected"))
-  .catch(err => logger.error("Database connection error", { error: err.message }));
 
 module.exports = pool;
