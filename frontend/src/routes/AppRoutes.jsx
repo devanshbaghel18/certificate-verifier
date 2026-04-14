@@ -12,6 +12,7 @@ import History from "../pages/History";
 import ProtectedLanding from "../pages/ProtectedLanding";
 import UniversityDashboard from "../pages/UniversityDashboard";
 import AdminDashboard from "../pages/admin/AdminDashboard";
+import AdminLogin from "../pages/admin/AdminLogin";
 
 function AppRoutes() {
   const institutionToken = localStorage.getItem("token");
@@ -29,6 +30,7 @@ function AppRoutes() {
       <Route path="/viewer/login" element={<ViewerLogin />} />
       <Route path="/institution/login" element={<InstitutionLogin />} />
       <Route path="/university/dashboard" element={institutionToken ? <UniversityDashboard /> : <ProtectedLanding />} />
+      <Route path="/admin/login" element={<AdminLogin />} />
       <Route path="/admin/dashboard" element={<AdminDashboard />} />
     </Routes>
   );

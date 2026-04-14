@@ -4,7 +4,7 @@ import AppRoutes from "./routes/AppRoutes";
 
 function AppContent() {
   const location = useLocation();
-  const hideNavbarRoutes = ["/admin/dashboard", "/university/dashboard", "/institution/login"];
+  const hideNavbarRoutes = ["/admin/dashboard", "/admin/login", "/university/dashboard", "/institution/login"];
   const shouldHideNavbar = hideNavbarRoutes.includes(location.pathname);
 
   return (
