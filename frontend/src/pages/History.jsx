@@ -44,9 +44,9 @@ export default function History() {
         ) : history.length === 0 ? (
           <div className="bg-[#0c1610] border border-[#1a2c1f] rounded-2xl p-12 text-center space-y-6">
             <p className="text-[#a3b3a7] text-lg">No verification history found.</p>
-            <Link to="/verify">
+            <a href="/#verify">
               <button className="px-8 py-3 bg-brand-green hover:bg-brand-greenHover text-brand-darker font-bold rounded-lg shadow-[0_4px_20px_rgba(0,209,90,0.4)] transition-all">Verify a Certificate</button>
-            </Link>
+            </a>
           </div>
         ) : (
           <div className="bg-[#0c1610] border border-[#1a2c1f] rounded-2xl overflow-hidden shadow-2xl">

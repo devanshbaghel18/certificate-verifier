@@ -1,12 +1,11 @@
 import { FileCode2, Database, LayoutGrid, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
 
 export default function Docs() {
   return (
-    <div className="min-h-screen bg-brand-darker text-white font-sans overflow-hidden">
+    <div className="bg-brand-darker text-white font-sans overflow-hidden border-t border-[#1a2c1f]">
 
       {/* HERO */}
-      <section className="relative pt-32 lg:pt-40 pb-24 border-b border-[#1a2c1f]">
+      <section className="relative py-24 border-b border-[#1a2c1f]">
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-brand-green/5 rounded-full blur-[150px] pointer-events-none"></div>
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-brand-green border border-brand-green/30 bg-brand-green/10 px-4 py-1.5 rounded-full shadow-[0_0_10px_rgba(0,209,90,0.1)] mb-6">
@@ -85,11 +84,11 @@ export default function Docs() {
             We are actively mapping out high-throughput REST APIs that will allow any collegiate platform or employer suite to integrate issuing and checking natively inside their own codebases.
           </p>
           
-          <Link to="/contact">
+          <a href="#contact" onClick={(e) => { e.preventDefault(); document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' }); }}>
             <button className="flex items-center justify-center gap-3 px-8 py-3 bg-brand-green text-brand-darker font-bold rounded-xl shadow-[0_4px_20px_rgba(0,209,90,0.3)] hover:shadow-[0_4px_30px_rgba(0,209,90,0.4)] transition-all mx-auto group">
               Express API Interest <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
-          </Link>
+          </a>
         </div>
       </section>
 

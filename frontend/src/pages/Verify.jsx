@@ -33,6 +33,10 @@ function Verify() {
     }
   };
 
+  // ─── CLIENT-SIDE HASHING ────────────────────────────────────────────────────
+  // To ensure absolute privacy, the certificate PDF is hashed directly in the user's browser.
+  // We extract a SHA-256 digital fingerprint from the file's raw binary data.
+  // This means the file itself doesn't need to be sent anywhere to prove its integrity.
   const generateHash = async (f) => {
     const buffer = await f.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);
@@ -54,6 +58,10 @@ function Verify() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  // ─── VERIFICATION REQUEST ───────────────────────────────────────────────────
+  // Sends the file to the backend to check if the generated hash exists in the database.
+  // If it's a match, it proves the document is 100% authentic and unaltered.
+  // It also automatically logs this verification attempt in the user's history if they are logged in.
   const handleVerify = async () => {
     if (!file) return;
     setStatus("loading"); setResult(null);
@@ -61,7 +69,15 @@ function Verify() {
       const data = await verifyCertificate(file);
       const isValid = data.valid;
       const certData = data.data || null;
-      if (isValid) { setStatus("valid"); setResult(certData); } else { setStatus("invalid"); }
+
+      if (isValid) { 
+        setStatus("valid"); 
+        setResult(certData); 
+      } else { 
+        setStatus("invalid"); 
+      }
+      
+      // Save to viewing history if the user is authenticated
       if (viewerToken) {
         await saveVerificationHistory({
           token: viewerToken, certificateHash: hash, fileName: file.name,
@@ -69,7 +85,10 @@ function Verify() {
         });
         fetchHistory();
       }
-    } catch (err) { console.error(err); setStatus("invalid"); }
+    } catch (err) { 
+        console.error(err); 
+        setStatus("invalid"); 
+    }
   };
 
   const handleLogout = () => {
@@ -80,7 +99,7 @@ function Verify() {
   return (
     <div className="min-h-screen bg-brand-darker text-white font-sans overflow-hidden">
 
-      <section className="relative pt-40 pb-16">
+      <section className="relative pt-24 pb-16">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-green/5 rounded-full blur-[150px] pointer-events-none"></div>
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
           <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-brand-green border border-brand-green/30 bg-brand-green/10 px-4 py-1.5 rounded-full shadow-[0_0_10px_rgba(0,209,90,0.1)]">

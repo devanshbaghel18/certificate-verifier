@@ -1,3 +1,11 @@
+/**
+ * ============================================================================
+ * SERVER.JS - The Core Backend Engine
+ * ============================================================================
+ * This is the main entry point for the backend. It sets up the Express server,
+ * connects to PostgreSQL, hooks up Socket.IO for real-time admin notifications,
+ * and wires all our routing and security middlewares.
+ */
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -8,7 +16,8 @@ const crypto = require("crypto");
 const fs = require("fs");
 require("dotenv").config();
 
-// ─── Monitoring & Security ───────────────────────────────────────────────────
+// ─── Monitoring & Security Middlewares ───────────────────────────────────────
+// These tools keep the server safe from spam and track how well it's performing.
 const statusMonitor = require("express-status-monitor");
 const logger = require("./src/utils/logger");
 const requestLogger = require("./src/middlewares/requestLogger");

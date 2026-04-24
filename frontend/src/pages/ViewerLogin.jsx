@@ -44,9 +44,9 @@ export default function ViewerLogin() {
           </div>
           <div className="border-t border-gray-800 pt-4 text-center text-sm text-gray-500">
             Just want to verify without saving history?{" "}
-            <Link to="/verify" className="text-green-400 hover:underline">
+            <a href="/#verify" className="text-green-400 hover:underline">
               Continue without login
-            </Link>
+            </a>
           </div>
         </div>
         <div className="flex justify-between mt-6 text-sm text-gray-500">

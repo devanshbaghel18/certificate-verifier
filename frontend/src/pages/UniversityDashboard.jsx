@@ -47,7 +47,10 @@ export default function UniversityDashboard() {
     }
   };
 
-  // Generate SHA-256 hash from file
+  // ─── FILE PROCESSING ──────────────────────────────────────────────────────────
+  // Takes the uploaded PDF file and generates a cryptographic SHA-256 hash.
+  // This happens entirely on the client-side (no server needed yet). 
+  // This hash represents the "digital fingerprint" of the exact file contents.
   const generateHash = async (file) => {
     const buffer = await file.arrayBuffer();
     const hashBuffer = await crypto.subtle.digest("SHA-256", buffer);

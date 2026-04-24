@@ -2,24 +2,30 @@ const { Pool } = require("pg");
 require("dotenv").config();
 const logger = require("../src/utils/logger");
 
-// Create pool
-const pool = new Pool({
-  host: process.env.DB_HOST,
-  port: Number(process.env.DB_PORT),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  connectionString:
-  process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+// Determine if we are in production (using a connection string)
+const isProduction = !!process.env.DATABASE_URL;
 
-  // NEW (important)
-  max: 10, // max connections
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+const poolConfig = isProduction 
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: { rejectUnauthorized: false },
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    }
+  : {
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT),
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    };
+
+// Create pool
+const pool = new Pool(poolConfig);
 
 //  Better connection test
 (async () => {

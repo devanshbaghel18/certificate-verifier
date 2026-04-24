@@ -25,12 +25,12 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-5 pt-2">
-              <Link to="/verify" className="flex-1 sm:flex-none">
+              <a href="#verify" onClick={(e) => { e.preventDefault(); document.getElementById('verify')?.scrollIntoView({ behavior: 'smooth' }); }} className="flex-1 sm:flex-none">
                 <button className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-brand-green hover:bg-brand-greenHover text-brand-darker font-bold text-lg rounded-xl shadow-[0_8px_30px_rgba(0,209,90,0.25)] transition-all group">
                   <FileCheck2 size={24} className="group-hover:scale-110 transition-transform" />
                   Verify Certificate
                 </button>
-              </Link>
+              </a>
 
               <Link to="/institution/login" className="flex-1 sm:flex-none">
                 <button className="flex items-center justify-center gap-3 w-full sm:w-auto px-8 py-4 bg-transparent border border-brand-green/40 hover:border-brand-green text-white font-bold text-lg rounded-xl hover:bg-brand-highlight/30 transition-all group backdrop-blur-sm shadow-[0_4px_20px_rgba(0,209,90,0.05)] hover:shadow-[0_4px_20px_rgba(0,209,90,0.15)]">
