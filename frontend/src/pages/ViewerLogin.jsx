@@ -11,7 +11,7 @@ export default function ViewerLogin() {
       const { user } = await viewerLogin(credentialResponse.credential);
       localStorage.setItem("viewerToken", credentialResponse.credential);
       localStorage.setItem("viewerUser", JSON.stringify(user));
-      navigate("/verify");
+      navigate("/#verify");
     } catch (err) {
       console.error("Viewer login failed", err);
     }
