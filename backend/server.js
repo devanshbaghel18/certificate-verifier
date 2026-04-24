@@ -40,10 +40,18 @@ const adminRoutes = require("./src/routes/admin.routes");
 const { verifyInstitutionToken } = require("./src/middlewares/authMiddleware");
 
 const app = express();
+
+// Trust Render's reverse proxy so express-rate-limit works correctly
+app.set('trust proxy', 1);
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: ["https://certificate-verifier.vercel.app", "http://localhost:5173"],
+    origin: function (origin, callback) {
+      if (!origin || origin.endsWith('.vercel.app') || origin.includes('localhost')) {
+        return callback(null, true);
+      }
+      callback(new Error('CORS not allowed'));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   }
@@ -82,8 +90,21 @@ app.use(statusMonitor({
 }));
 
 // ─── CORS ────────────────────────────────────────────────────────────────────
+// Accept requests from any Vercel deployment URL (preview + production)
 app.use(cors({
-  origin: ["https://certificate-verifier.vercel.app", "http://localhost:5173"],
+  origin: function (origin, callback) {
+    const allowed = [
+      "http://localhost:5173",
+      "http://localhost:4173",
+    ];
+    // Allow requests with no origin (e.g. mobile apps, curl)
+    if (!origin) return callback(null, true);
+    // Allow any *.vercel.app deployment
+    if (origin.endsWith(".vercel.app") || allowed.includes(origin)) {
+      return callback(null, true);
+    }
+    callback(new Error("CORS not allowed"));
+  },
   credentials: true,
 }));
 app.use(express.json());

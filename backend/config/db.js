@@ -11,7 +11,7 @@ const poolConfig = isProduction
       ssl: { rejectUnauthorized: false },
       max: 10,
       idleTimeoutMillis: 30000,
-      connectionTimeoutMillis: 2000,
+      connectionTimeoutMillis: 10000,
     }
   : {
       host: process.env.DB_HOST,
