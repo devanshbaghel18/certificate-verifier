@@ -7,6 +7,40 @@ const pool = require("../../config/db");
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
 
+// ─── QUICK LOGIN (email + password, no Google OAuth) ─────────────────────────
+// Credentials stored in env: UNI_EMAIL and UNI_PASSWORD
+const UNI_EMAILS = (process.env.UNI_EMAIL || "")
+  .split(",")
+  .map(e => e.trim().toLowerCase())
+  .filter(e => e.length > 0);
+
+router.post("/quick-login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const uniPassword = process.env.UNI_PASSWORD || "uni123";
+
+    if (!UNI_EMAILS.includes(email.toLowerCase()) || password !== uniPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    // Direct JWT — no database check needed
+    const token = jwt.sign(
+      { email: email.toLowerCase(), role: "institution", name: "Institution" },
+      JWT_SECRET,
+      { expiresIn: "7d" }
+    );
+
+    return res.json({ status: "approved", token, user: { email, name: "Institution", role: "institution" } });
+  } catch (err) {
+    console.error("Quick Login Error:", err);
+    res.status(500).json({ error: "Quick login failed" });
+  }
+});
+
 router.post("/login", async (req, res) => {
   try {
     const { credential } = req.body;

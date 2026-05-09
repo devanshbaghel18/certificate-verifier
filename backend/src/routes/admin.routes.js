@@ -7,9 +7,39 @@ const { verifyAdminToken } = require("../middlewares/authMiddleware");
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
-const MASTER_ADMIN = process.env.ADMIN_EMAIL || "dev@certichain.com";
+// Support multiple admin emails (comma-separated in env)
+const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || "dev@certichain.com")
+  .split(",")
+  .map(e => e.trim().toLowerCase());
 
-// Admin Authorization Initializer
+// ─── QUICK LOGIN (email + password, no Google OAuth) ─────────────────────────
+// Credentials are stored in env: ADMIN_EMAIL and ADMIN_PASSWORD
+router.post("/quick-login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: "Email and password are required" });
+    }
+
+    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
+
+    if (!ADMIN_EMAILS.includes(email.toLowerCase()) || password !== adminPassword) {
+      return res.status(401).json({ error: "Invalid credentials" });
+    }
+
+    const token = jwt.sign(
+      { email, role: "admin", name: "Admin" },
+      JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    return res.json({ token, user: { email, name: "Admin", role: "admin" } });
+  } catch (err) {
+    res.status(500).json({ error: "Quick login failed" });
+  }
+});
+
+// Admin Authorization via Google OAuth
 router.post("/login", async (req, res) => {
   try {
     const { credential } = req.body;
@@ -19,8 +49,8 @@ router.post("/login", async (req, res) => {
     });
     const { email, name } = ticket.getPayload();
 
-    if (email !== MASTER_ADMIN) {
-      return res.status(403).json({ error: "Intrusion Denied: You are not the Master Admin." });
+    if (!ADMIN_EMAILS.includes(email.toLowerCase())) {
+      return res.status(403).json({ error: "Intrusion Denied: You are not an authorized Admin." });
     }
 
     const token = jwt.sign({ email, role: "admin", name }, JWT_SECRET, { expiresIn: "1d" });

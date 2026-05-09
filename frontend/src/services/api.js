@@ -81,3 +81,15 @@ export const deleteAdminInstitution = async (id, token) => {
   });
   return response.data;
 };
+
+// Quick admin login (email + password, no Google)
+export const quickAdminLogin = async (email, password) => {
+  const response = await API.post("/api/admin/quick-login", { email, password });
+  return response.data;
+};
+
+// Quick institution login (email + password, no Google)
+export const quickInstitutionLogin = async (email, password) => {
+  const response = await API.post("/api/institution/quick-login", { email, password });
+  return response.data;
+};

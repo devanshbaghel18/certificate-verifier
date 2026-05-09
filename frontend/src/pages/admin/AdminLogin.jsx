@@ -1,13 +1,16 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
-import { ShieldAlert } from "lucide-react";
+import { ShieldAlert, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
-import { adminLogin } from "../../services/api";
+import { adminLogin, quickAdminLogin } from "../../services/api";
 import { useState } from "react";
 
 function AdminLogin() {
   const navigate = useNavigate();
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSuccess = async (credentialResponse) => {
     try {
@@ -28,6 +31,23 @@ function AdminLogin() {
 
   const handleError = () => {
     setError("Google Login failed to initialize.");
+  };
+
+  const handleQuickLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setError("");
+      setLoading(true);
+      const response = await quickAdminLogin(email, password);
+      if (response.token) {
+        localStorage.setItem("adminToken", response.token);
+        navigate("/admin/dashboard");
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || "Login failed. Check credentials.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -51,8 +71,50 @@ function AdminLogin() {
 
         <div className="bg-[#0a111a] backdrop-blur-lg border border-[#1a2b42] rounded-3xl p-10 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-          
-          <div className="flex justify-center mb-2">
+
+          {/* Quick Login Form */}
+          <form onSubmit={handleQuickLogin} className="space-y-4 mb-6 relative z-10">
+            <div>
+              <label className="block text-xs font-semibold text-[#8a9bb3] mb-2 uppercase tracking-wider">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@certichain.com"
+                required
+                className="w-full px-4 py-3 bg-[#060a0f] border border-[#1a2b42] rounded-xl text-sm text-white placeholder:text-[#2a3d55] focus:border-blue-500/50 focus:outline-none focus:shadow-[0_0_10px_rgba(59,130,246,0.1)] transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-[#8a9bb3] mb-2 uppercase tracking-wider">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                className="w-full px-4 py-3 bg-[#060a0f] border border-[#1a2b42] rounded-xl text-sm text-white placeholder:text-[#2a3d55] focus:border-blue-500/50 focus:outline-none focus:shadow-[0_0_10px_rgba(59,130,246,0.1)] transition-all"
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(59,130,246,0.3)] hover:shadow-[0_4px_20px_rgba(59,130,246,0.4)] disabled:opacity-50 disabled:cursor-wait"
+            >
+              <LogIn size={16} />
+              {loading ? "Authenticating..." : "Login"}
+            </button>
+          </form>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-6">
+            <div className="flex-1 h-px bg-[#1a2b42]"></div>
+            <span className="text-xs text-[#4a5f7e] font-semibold uppercase">or continue with</span>
+            <div className="flex-1 h-px bg-[#1a2b42]"></div>
+          </div>
+
+          {/* Google Login */}
+          <div className="flex justify-center">
             <GoogleLogin
               onSuccess={handleSuccess}
               onError={handleError}

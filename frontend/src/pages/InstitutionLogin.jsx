@@ -1,14 +1,16 @@
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
-import { Shield, Clock, XCircle, Loader2 } from "lucide-react";
+import { Shield, Clock, XCircle, Loader2, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
-import { institutionLogin } from "../services/api";
+import { institutionLogin, quickInstitutionLogin } from "../services/api";
 import { useState } from "react";
 
 function InstitutionLogin() {
   const navigate = useNavigate();
   const [status, setStatus] = useState(null); // null | "loading" | "pending" | "rejected" | "error"
   const [errorMsg, setErrorMsg] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSuccess = async (credentialResponse) => {
     try {
@@ -37,6 +39,29 @@ function InstitutionLogin() {
     setErrorMsg("Google Login failed to initialize.");
   };
 
+  const handleQuickLogin = async (e) => {
+    e.preventDefault();
+    try {
+      setStatus("loading");
+      setErrorMsg("");
+      const response = await quickInstitutionLogin(email, password);
+
+      if (response.status === "approved") {
+        localStorage.setItem("token", response.token);
+        navigate("/university/dashboard");
+      } else if (response.status === "pending") {
+        setStatus("pending");
+      }
+    } catch (err) {
+      if (err.response && err.response.status === 403) {
+        setStatus("rejected");
+      } else {
+        setStatus("error");
+        setErrorMsg(err.response?.data?.error || "Login failed. Check credentials.");
+      }
+    }
+  };
+
   return (
     <div className="min-h-screen bg-brand-darker text-white flex items-center justify-center px-6 relative overflow-hidden">
 
@@ -59,7 +84,7 @@ function InstitutionLogin() {
             Institution <span className="text-brand-green drop-shadow-[0_0_20px_rgba(0,209,90,0.3)]">Login</span>
           </h1>
           <p className="text-[#a3b3a7] text-sm font-medium">
-            Sign in with your institution Google account to request access.
+            Sign in to access your institution dashboard.
           </p>
         </div>
 
@@ -67,16 +92,63 @@ function InstitutionLogin() {
         <div className="bg-[#0c1610] backdrop-blur-lg border border-[#1a2c1f] rounded-3xl p-10 shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-brand-green/10 rounded-full blur-[40px] pointer-events-none"></div>
 
-          {/* DEFAULT: Show Google Login */}
+          {/* DEFAULT: Show login options */}
           {status === null && (
-            <div className="flex justify-center mb-2">
-              <GoogleLogin
-                onSuccess={handleSuccess}
-                onError={handleError}
-                theme="outline"
-                size="large"
-                width="300"
-              />
+            <div className="relative z-10">
+              {/* Quick Login Form */}
+              <form onSubmit={handleQuickLogin} className="space-y-4 mb-6">
+                <div>
+                  <label className="block text-xs font-semibold text-[#a3b3a7] mb-2 uppercase tracking-wider">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="university@example.com"
+                    required
+                    className="w-full px-4 py-3 bg-[#040804] border border-[#1a2c1f] rounded-xl text-sm text-white placeholder:text-[#2a3c2f] focus:border-brand-green/50 focus:outline-none focus:shadow-[0_0_10px_rgba(0,209,90,0.1)] transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-[#a3b3a7] mb-2 uppercase tracking-wider">Password</label>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className="w-full px-4 py-3 bg-[#040804] border border-[#1a2c1f] rounded-xl text-sm text-white placeholder:text-[#2a3c2f] focus:border-brand-green/50 focus:outline-none focus:shadow-[0_0_10px_rgba(0,209,90,0.1)] transition-all"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-brand-green hover:bg-brand-greenHover text-brand-darker rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2 shadow-[0_4px_14px_rgba(0,209,90,0.3)] hover:shadow-[0_4px_20px_rgba(0,209,90,0.4)]"
+                >
+                  <LogIn size={16} />
+                  Login
+                </button>
+              </form>
+
+              {/* Divider */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex-1 h-px bg-[#1a2c1f]"></div>
+                <span className="text-xs text-[#4a6b53] font-semibold uppercase">or continue with</span>
+                <div className="flex-1 h-px bg-[#1a2c1f]"></div>
+              </div>
+
+              {/* Google Login */}
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={handleSuccess}
+                  onError={handleError}
+                  theme="outline"
+                  size="large"
+                  width="300"
+                />
+              </div>
+
+              <p className="text-center text-[#4a6b53] text-xs font-semibold mt-8 uppercase tracking-widest">
+                Only Pre-Authorized Institutions Can Issue Certificates
+              </p>
             </div>
           )}
 
@@ -139,12 +211,6 @@ function InstitutionLogin() {
                 Retry Login
               </button>
             </div>
-          )}
-
-          {status === null && (
-            <p className="text-center text-[#4a6b53] text-xs font-semibold mt-8 uppercase tracking-widest">
-              Only Pre-Authorized Institutions Can Issue Certificates
-            </p>
           )}
         </div>
 
