@@ -1,7 +1,9 @@
 const jwt = require("jsonwebtoken");
 
 const JWT_SECRET = process.env.JWT_SECRET || "super_secret_key";
-const MASTER_ADMIN = process.env.ADMIN_EMAIL || "dev@certichain.com";
+const ADMIN_EMAILS = (process.env.ADMIN_EMAIL || "dev@certichain.com")
+  .split(",")
+  .map(e => e.trim().toLowerCase());
 
 // ─── AUTHENTICATION GUARDS ──────────────────────────────────────────────────
 // These middleware functions act as security bouncers for our API routes.
@@ -35,8 +37,8 @@ const verifyAdminToken = (req, res, next) => {
   const token = authHeader.split(" ")[1];
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.role !== "admin" && decoded.email !== MASTER_ADMIN) {
-      return res.status(403).json({ error: "Access denied. Master Admin only." });
+    if (decoded.role !== "admin" && !ADMIN_EMAILS.includes(decoded.email?.toLowerCase())) {
+      return res.status(403).json({ error: "Access denied. Admin only." });
     }
     req.user = decoded;
     next();
