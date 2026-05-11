@@ -1,13 +1,22 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense } from 'react';
 import { useLocation } from 'react-router-dom';
+import { Loader } from "lucide-react";
 import Home from './Home';
 import Verify from './Verify';
-import Docs from './Docs';
-import About from './About';
-import Contact from './Contact';
-import Terms from './Terms';
-import Privacy from './Privacy';
-import Disclaimer from './Disclaimer';
+
+// Lazy load below-the-fold components to improve initial page load performance
+const Docs = React.lazy(() => import('./Docs'));
+const About = React.lazy(() => import('./About'));
+const Contact = React.lazy(() => import('./Contact'));
+const Terms = React.lazy(() => import('./Terms'));
+const Privacy = React.lazy(() => import('./Privacy'));
+const Disclaimer = React.lazy(() => import('./Disclaimer'));
+
+const SectionLoader = () => (
+  <div className="flex justify-center items-center py-20">
+    <Loader size={30} className="text-brand-green animate-spin" />
+  </div>
+);
 
 export default function Landing() {
   const location = useLocation();
@@ -33,24 +42,26 @@ export default function Landing() {
       <section id="verify">
         <Verify />
       </section>
-      <section id="docs">
-        <Docs />
-      </section>
-      <section id="about">
-        <About />
-      </section>
-      <section id="contact">
-        <Contact />
-      </section>
-      <section id="terms">
-        <Terms />
-      </section>
-      <section id="privacy">
-        <Privacy />
-      </section>
-      <section id="disclaimer">
-        <Disclaimer />
-      </section>
+      <Suspense fallback={<SectionLoader />}>
+        <section id="docs">
+          <Docs />
+        </section>
+        <section id="about">
+          <About />
+        </section>
+        <section id="contact">
+          <Contact />
+        </section>
+        <section id="terms">
+          <Terms />
+        </section>
+        <section id="privacy">
+          <Privacy />
+        </section>
+        <section id="disclaimer">
+          <Disclaimer />
+        </section>
+      </Suspense>
     </div>
   );
 }
