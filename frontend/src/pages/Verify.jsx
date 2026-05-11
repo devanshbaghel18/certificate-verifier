@@ -102,9 +102,9 @@ function Verify() {
       <section className="relative pt-24 pb-16">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-brand-green/5 rounded-full blur-[150px] pointer-events-none"></div>
         <div className="max-w-4xl mx-auto px-6 text-center relative z-10">
-          <span className="inline-flex items-center gap-2 text-sm font-semibold tracking-wide text-brand-green border border-brand-green/30 bg-brand-green/10 px-4 py-1.5 rounded-full shadow-[0_0_10px_rgba(0,209,90,0.1)]">
-            <CheckCircle size={14} /> Open Verification
-          </span>
+          <div className="flex items-center justify-center gap-2 text-sm font-bold uppercase tracking-widest text-brand-green/80 mb-3">
+            <CheckCircle size={16} /> Open Verification
+          </div>
           <h1 className="text-5xl font-bold mt-6 mb-4 tracking-tight">Verify a <span className="text-brand-green">Certificate</span></h1>
           <p className="text-[#a3b3a7] text-lg max-w-2xl mx-auto">Upload the PDF document below. Our system will generate a cryptographic SHA-256 hash completely on your device and check it against the Ethereum blockchain securely.</p>
         </div>
